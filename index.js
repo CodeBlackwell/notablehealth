@@ -1,6 +1,8 @@
 require("dotenv").config()
 require("express-async-errors")
 
+
+
 const accessLogMiddleware = require("./middlewares/logger.middleware")
 const routes = require("./routes/api")
 
@@ -16,5 +18,14 @@ app.use(express.json())
 app.use(accessLogMiddleware)
 
 app.use("/", routes)
+
+
+const Airtable = require('airtable');
+Airtable.configure({
+    endpointUrl: 'https://api.airtable.com',
+    apiKey: process.env.AIRTABLE_API_KEY
+});
+var base = Airtable.base('appNSsrogRqeWbemH');
+
 
 module.exports = app
