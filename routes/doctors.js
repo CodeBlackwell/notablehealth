@@ -7,25 +7,17 @@ const appointmentsTable = base('Appointments')
 // instantiate router
 const router = express.Router()
 
-router.get('/', (req, res) => {
+const getDoctorsNames = async (req, res)=> {
     const doctorNames = []
-    base('Doctors').select({
-        view: "Grid view"
-    }).eachPage(function page(records, fetchNextPage) {
-        // This function (`page`) will get called for each page of records.
-        records.forEach(function(record) {
+    const records = await physiciansTable.select({view: "Grid view"}).eachPage(async (records, fetchNextPage) => {
+        records.forEach(record => {
             doctorNames.push({
                 name: record.get('Name'),
                 physicianID: record.get('PhysicianID')
-            });
-            console.log(doctorNames)
-        });
-        // To fetch the next page of records, call `fetchNextPage`.
-        // If there are more records, `page` will get called again.
-        // If there are no more records, `done` will get called.
+            })
+        })
         fetchNextPage();
-    
-    }, function done(err) {
+    },function done(err) {
         if (err) {
             console.error(err); return; 
             res.status(500).json(err)
@@ -33,7 +25,15 @@ router.get('/', (req, res) => {
         else {
             res.status(200).json(doctorNames)
         }
-    });
+    })
+}
+
+
+// const getDoctorById = async (id) => {
+
+// }
+router.get('/', (req, res) => {
+    getDoctorsNames(req,res)
 })
 
 router.get('/:physician_id', async (req, res) => {
