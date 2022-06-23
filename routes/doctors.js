@@ -2,7 +2,8 @@ var express = require('express')
 var Airtable = require('airtable')
 const { restoreDefaultPrompts } = require('inquirer')
 const base = new Airtable({apiKey: process.env.AIRTABLE_API_KEY}).base(process.env.AIRTABLE_BASE)
-
+const physiciansTable = base('Doctors')
+const appointmentsTable = base('Appointments')
 // instantiate router
 const router = express.Router()
 
@@ -35,35 +36,26 @@ router.get('/', (req, res) => {
     });
 })
 
-router.get('/:physician_id', (req, res) => {
-    let appointment_ids;
+router.get('/:physician_id', async (req, res) => {
     let appointments;
     
-    base('Doctors').find(req.params.physician_id, function(err, physician_record) {
-        if (err) { res.status(500).json(err); console.error(err); return; }
-        appointment_ids = physician_record.get('Appointments')
-    })
-    base('Appointments').select({
-        view: "Grid view",
-        appointmentID: appointment_ids
-    }).eachPage(function page(records, fetchNextPage) {
-        // This function (`page`) will get called for each page of records.
-        appointments = records.fields
-        console.log(records)
-        records.forEach(function(record) {
-            console.log('Retrieved', record.get('Name'));
-        });
-    
-        // To fetch the next page of records, call `fetchNextPage`.
-        // If there are more records, `page` will get called again.
-        // If there are no more records, `done` will get called.
-        fetchNextPage();
-    
-    }, function done(err) {
-        if (err) { console.error(err); return; }
-        res.status(200).send("appointments")
-    });
+    const findAppointmentRecordById = async (id) => {
+        await base('Appointment').find(id, (err, record) => {
+            if (err) { res.status(500).json(err); console.error(err); return; }
+            return record
+        })
+    }
 
+    const appointmentIdList = await base('Doctors').find(req.params.physician_id, async (err, physician_record) => {
+        if (err) { res.status(500).json(err); console.error(err); return; }
+        let appointment_ids = JSON.stringify(physician_record.fields.Appointments)
+        console.log(appointment_ids)
+        return appointment_ids
+    })
+    console.log(appointmentIdList, "OOF")
+    // console.log(findAppointmentRecordById({recordId: 'recw1LExZnN41QryV'}, (err, res) => { console.log(res)}))
+    
+    
 })
     // .put( (req, res) => {
     //     res.send(`update user with id ${req.params.id}`)
