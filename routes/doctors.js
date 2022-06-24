@@ -51,18 +51,10 @@ const createAppointments = async (req, res, records) => {
     res.send(200)
 }
 
-const getAppointmentById = async (req, res, id) => {
-    let details = {};
-    const appointment = await appointmentsTable.find(id, (err, record) => {
-        if (err) { res.status(500).json(err); console.error(err); return; }
-         record.fields
-        console.log(details)
-        for(let key in record.fields){
-            details[key] = record.fields[key]
-        }
-    })
-    return details
-}
+const getAppointmentById = async (req, res, id) => find(id, function(err, record) {
+    if (err) { console.error(err); return; }
+    console.log('Retrieved', record.id);
+});
 
 const deleteAppointmentById = async (id) => {
     try {
@@ -81,17 +73,30 @@ const getDoctorById = async (id) => {
 router.get('/', (req, res) => {
     getDoctorsNames(req,res)
 })
-
+/**
+ * Route to pull all appointments for a specified physician. Current Only returns Appointment ID's
+ */
 router.get('/:physician_id', async (req, res) => {
-    let appointments = [];
     
     const doctor = await getDoctorById(req.params.physician_id)
     const apts = doctor.fields.Appointments.map(async apt_id => {
       let apt = await getAppointmentById(req, res, apt_id)
-      console.log(apt)
+      
     })
+    res.json(doctor.fields.Appointments)
+    // const promises = doctor.fields.Appointments.map(async apt_id => {
+    //     const apt_details = await getAppointmentById(req, res, apt_id)
+    //     return apt_details
+    //   })
+
+    // const appointments = await Promise.all(promises)
+    // console.log(appointments)
 })
 
+router.get('/appointments/:appointment_id', (req, res) => {
+    console.log(getAppointmentById(req.params.appointment_id))
+    res.status(200).json(getAppointmentById(req.params.appointment_id))
+})
 router.delete('/appointments/:appointment_id', (req, res) => {
     deleteAppointmentById(req.params.appointment_id)
     res.status(200).send(`Appointment: ${req.params.appointment_id} has been deleted`)
