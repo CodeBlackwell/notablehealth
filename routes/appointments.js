@@ -14,7 +14,21 @@ const createAppointments = async (req, res) => {
     const validMinutes = {"0": true, "15": true, "30": true, "45": true}
     try {
         let convertedDate = new Date(req.body.date)
-        appointmentsTable.create(records, function(err, newRecord) {
+        if (validMinutes[convertedDate.getMinutes()] === undefined){
+            res.status(400).send("Appointments can only be made at 15 minute intervals (0, 15, 30, 45)")
+        }
+        if (req.body.physicianID === undefined){
+            res.status(404).send("Appointments can only be made with a physician id provided in the body")
+        }
+        if (req.body.patientID === undefined){
+            res.status(404).send("Appointments can only be made with a patient id provided in the body")
+        }
+        if (req.body.date === undefined ) {
+            res.status(404).send("Appointments can only be made with a date provided in the body")
+        }
+
+
+        appointmentsTable.create(req.body, function(err, newRecord) {
             if (err) {
                 console.error(err);
                 return;
@@ -24,10 +38,8 @@ const createAppointments = async (req, res) => {
             });
         });
     } catch (error) {
-        if (validMinutes[convertedDate.getMinutes()] !== undefined){
-            res.status(400).send("Appointments can only be made at 15 minute intervals (0, 15, 30, 45)")
-        }
         console.log("Check for Invalid date format. Refer to JS Date() docs https://www.w3schools.com/js/js_date_formats.asp")
+        res.status(404).send(error)
         return error
     }
 }
@@ -42,7 +54,15 @@ const listAllAppointments = async (req, res)=> {
     if (
         "date" in req.body &&
         "physician_id" in req.body) {
+        //@TODO: Trying to get the correct Formula is proving difficult.
 
+        // example data
+        /**
+         * req.body.date = "06/15/2022"
+         * req.body.physicianID = "rec9RDBizzyXWZT07"
+         * -- expected output
+         * ->  Donald Darkwing Follow-Up with Jake Schmidtt @ 2022-06-15T13:10:00.000Z
+         */
         let filterFormula = ` AND(IF(FIND(${req.body.date}, {Date})), IF(FIND(${req.body.physicianID}, {Physician_ID})))`
         queryParams = {
             filterByFormula: filterFormula
@@ -81,39 +101,29 @@ const deleteAppointmentById = async (id) => {
  * List all Appointments on the Appointments' table indiscriminately
  */
 router.get('/', async(req, res) => {
-    listAllAppointments(req, res)
+    await listAllAppointments(req, res)
 })
-/**
- * Route to pull all appointments for a specified physician. On a specified date.
- */
-router.get('/date', (req, res) => {
-
-})
-
-
-router.get('/date/:physician_id', (req, res) => res.status(200).send("specify a P"))
-
 
 router.route('/:appointment_id')
     /**
      * Retrieve appointment details by specifying the appointment ID.
      */
-    .get((req, res) => {
+    .get(async (req, res) => {
     console.log(getAppointmentById(req.params.appointment_id))
-    res.status(200).json(getAppointmentById(req.params.appointment_id))
+    res.status(200).json(await getAppointmentById(req.params.appointment_id))
     })
     /**
      * Delete an appointment by specifying the appointment ID.
      */
-    .delete((req, res) => {
-    deleteAppointmentById(req.params.appointment_id)
+    .delete(async (req, res) => {
+    await deleteAppointmentById(req.params.appointment_id)
     res.status(200).send(`Appointment: ${req.params.appointment_id} has been deleted`)
     })
     /**
      * Create an Appointment: Provide appointment details in the request body.
      */
-    router.post( (req, res) => {
-        createAppointments(req, res)
-    })
 
+router.post( '/create', async(req, res) => {
+    await createAppointments(req, res)
+})
 module.exports = router
