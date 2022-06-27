@@ -1,7 +1,8 @@
 const express = require("express")
 
 const router = express.Router()
-var doctorsRouter = require('./doctors')
+const doctorsRouter = require('./doctors')
+const appointmentsRouter = require('./appointments')
 
 
 const IndexController = require("../controllers/index.controller")
@@ -14,6 +15,6 @@ router.get("/", IndexController.index)
 router.post("/", validate(indexValidator), IndexController.indexPost)
 
 router.use("/doctors", doctorsRouter)
-
+router.use("/appointments", appointmentsRouter)
 
 module.exports = router
